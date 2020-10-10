@@ -22,18 +22,18 @@ void list_append(List *list, void * val);
 
 void list_prepend(List *list, void * val);
 
-void list_print(List *list, int tostr(const void *, char *), int strsz);
+void list_print(List *list, char * tostr(const void *, char *), int strsz);
 
 void list_insert(List *list, int index, void * val);
 
 void * list_remove(List *list, int index);
 
-void * list_element_at(List *list, int index);
+void * list_val_at(List *list, int index);
 
 int list_clear(List *list, int (destory) (void *));
 
 int list_find_first(List *list, const void * val, int (*compar)(const void *, const void *));
 
-int list_destroy(List *list);
+int list_destroy(List **list);
 
 #endif

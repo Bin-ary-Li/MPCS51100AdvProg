@@ -15,6 +15,10 @@ List * list_create(size_t valsiz){
 void list_append(List *list, void * val){
     List_element *curr, *prev;
 
+    if (list == NULL || val == NULL) {
+        return;
+    }
+
     prev = list->tail;
     curr = malloc(sizeof(List_element));
     curr->data = val;
@@ -37,6 +41,10 @@ void list_append(List *list, void * val){
 void list_prepend(List *list, void * val){
     List_element *curr, *next;
 
+    if (list == NULL || val == NULL) {
+        return;
+    }
+
     next = list->head;
     curr = malloc(sizeof(List_element));
     curr->data = val;
@@ -52,16 +60,28 @@ void list_prepend(List *list, void * val){
     ++(list->size);
 }
 
-void list_print(List *list, int tostr(const void *, char *), int strsz){
+void list_print(List *list, char * tostr(const void *, char *), int strsz){
     List_element *el;
-    char * res = (char *) malloc(strsz);
+    char * res;
 
+    if (list == NULL) {
+        return;
+    }
+
+    if(list->size == 0){
+        printf("[]\n");
+        return;
+    }
+
+    res = (char *) malloc(strsz);
     printf("[");
     for (el = list->head; el != NULL; el = el->next) {
-        if (tostr(el->data, res)){
+        res = tostr(el->data, res);
+        if (res == NULL){
             printf("Error when stringfying data value");
+        } else {
+            printf("%s\n", res);
         }
-        printf("%s\n", res);
     }
     printf("]\n");
     free(res);
@@ -71,6 +91,10 @@ void list_print(List *list, int tostr(const void *, char *), int strsz){
 void list_insert(List  *list, int index, void * val){
     List_element *el, *prev, *new;
     int count;
+
+    if (list == NULL || val == NULL) {
+        return;
+    }
 
     if (list->size < index + 1){
         printf("Index value %d past end of list: appending\n", index);
@@ -98,6 +122,14 @@ void * list_remove(List  *list, int index){
     void *re;
     int count;
 
+    if (list == NULL) {
+        return NULL;
+    }
+
+    if (index > list->size -1 || list->size == 0){
+        return NULL;
+    }
+
     for (count = 0, el = list->head; el != NULL; el = el->next, ++count){
         if (count == index){
             break;
@@ -116,14 +148,23 @@ void * list_remove(List  *list, int index){
 
     re = el->data;
     free(el);
+    --(list->size);
     return re;
 }
 
-void * list_element_at(List *list, int index){
+void * list_val_at(List *list, int index){
     List_element *el;
     int count;
     void * ret;
     ret = NULL;
+
+    if (list == NULL) {
+        return NULL;
+    }
+
+    if (index > list->size -1) {
+        return NULL;
+    }
 
     for (count = 0, el = list->head; el != NULL; el = el->next, ++count){
         if (count == index){
@@ -135,12 +176,17 @@ void * list_element_at(List *list, int index){
 
 int list_clear(List *list, int (destroy) (void *)){
     List_element *el, *curr;
+
+    if (list == NULL) {
+        return -1;
+    }
+
     el = list->head;
     while(el != NULL){
         curr = el;
         el = el->next;
-        if (destroy(curr->data)) {
-            return 1;
+        if (destroy(curr->data) < 0) {
+            return -1;
         } else {
             free(curr);
         }
@@ -155,6 +201,11 @@ int list_clear(List *list, int (destroy) (void *)){
 int list_find_first(List *list, const void * val, int (*compar)(const void *, const void *)){
     int index;
     List_element *el;
+
+    if (list == NULL || val == NULL || compar == NULL) {
+        return -1;
+    }
+
     for (index=0, el = list->head; el != NULL; el = el->next, ++index) {
         if (compar(el->data, val) == 0) {
             return index;
@@ -163,14 +214,19 @@ int list_find_first(List *list, const void * val, int (*compar)(const void *, co
     return -1;
 }
 
-int list_destroy(List *list) {
+int list_destroy(List **list) {
+    if (list == NULL || *list == NULL) {
+        return -1;
+    }
     List * l; 
-    l = list;
+    l = *list;
+
     if (l->head!=NULL) {
-        printf("Unsuccessful, list is nonemtpy, call clear_list first");
-        return 1;
+        printf("Unsuccessful, list is nonemtpy, call clear_list first\n");
+        return -1;
     } else {
         free(l);
+        *list = NULL;
         return 0;
     }
 }
