@@ -189,7 +189,7 @@ int main(int argc, char **argv){
   t = clock() - t;
   processor_t = ((double) t)/CLOCKS_PER_SEC;
   sd = sqrt((ssDis/n) - (sumDis/n)*(sumDis/n));
-  printf("SD = %f. Array took %f seconds to calculate the standard deviation of %d data.\n", sd, processor_t, n);
+  printf("SD = %f. Array took about %f seconds to calculate the standard deviation of %d data. \n", sd, processor_t, n);
 
   ssDis = sumDis = 0;
   t = clock();
@@ -204,7 +204,7 @@ int main(int argc, char **argv){
   t = clock() - t;
   processor_t = ((double) t)/CLOCKS_PER_SEC;
   sd = sqrt((ssDis/n) - (sumDis/n)*(sumDis/n));
-  printf("SD = %f. List took about %f seconds to calculate the standard deviation of %d data\n", sd, processor_t, n);
+  printf("SD = %f. List took about %f seconds to calculate the standard deviation of %d data. \n", sd, processor_t, n);
 
   list_clear(ptlist, destroy);
   list_destroy(&ptlist);
