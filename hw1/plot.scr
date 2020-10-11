@@ -1,4 +1,0 @@
-set title "Particle Positions"
-set xlabel "x position"
-set ylabel "y position"
-splot "data.txt" pointtype 7 pointsize 0.5
