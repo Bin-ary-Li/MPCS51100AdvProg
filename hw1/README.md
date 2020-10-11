@@ -4,9 +4,11 @@
 
 # Instruction
 
-Code can be compile using command `gcc -pedantic -ansi -Wall -o <output_name> point.c listfunc.c -lm`. The output program takes one positive integer argument, indicating the number of data points to be used for the Array-List performance comparison. For example `./<output_name> 1000000` will store 1000000 points in array and list and compare their respective performance of iterating on these points. The program will first print the result of its unit test before printing the result of performance comparison. The test for the performance is to calculate the standard deviation of the distances (to the origin) of the stored points. This will require using the array/list to iterate over each point, calculate the distance, and add each distance to the sum and the sum of square.
+Code can be compile using command `gcc -pedantic -ansi -Wall -o <output_name> point.c listfunc.c -lm`. The output program takes one positive integer argument, indicating the number of data points to be used for the Array-List performance comparison. For example `./<output_name> 1000000` will store 1000000 points in array and list and compare their respective performance of iterating on these points. The program will first print the result of its unit test before printing the result of performance comparison. The test for the performance is to calculate the standard deviation of the distances (to the origin) of the stored points. This will require using the array/list to iterate over each point, calculate the distance, and add each distance to the sum and the sum of square. The performance is measured by the amount of computing time used for the test.
 
 # Array vs. List Performance Comparison 
+
+In my test, using Array took about 3.015409 seconds to calculate the standard deviation of 10000000 data, while using List took about 5.511500 seconds to calculate the standard deviation of 10000000 data. So Array is almost twice as fast as List on iterating.
 
 # Design Discussion
 
