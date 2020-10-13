@@ -3,15 +3,24 @@
 #include <string.h>
 #include "list.h"
 
-List * list_create(){
+/* list_create creates a list structure, with the ability to store any type of data provided that the user 
+supplies the constructor with function as to how to stringfy (tostr()), destruct (destroy()), and 
+compare (compar()) the stored data. */
+List * list_create(char * (*tostr)(const void *, char *), int (*destroy) (void *),int (*compar)(const void *, const void *), int strsz){
     List *list = malloc(sizeof(List));
     list->head = NULL;
     list->tail = NULL;
     list->iter = NULL;
     list->size = 0;
+    list->tostr = tostr;
+    list->compar = compar;
+    list->destroy = destroy;
+    list->strsz = strsz;
     return list;
 }
 
+/* get an iterator of a list, which can be passed to next() funtion to get the next element in the list 
+and to hasNext() function to see if the iterator has reached the end of the list.  */
 Iterator * list_getIterator(List *list) {
     Iterator * it;
     if (list->iter != NULL) {
@@ -44,17 +53,17 @@ int hasNext(const Iterator* iter) {
     }
 }
 
-
-void list_append(List *list, void * val){
+/* The usual append function, place the input data at the end of the list */
+void list_append(List *list, void * data){
     List_element *curr, *prev;
 
-    if (list == NULL || val == NULL) {
+    if (list == NULL) {
         return;
     }
 
     prev = list->tail;
     curr = malloc(sizeof(List_element));
-    curr->data = val;
+    curr->data = data;
 
     curr->next = NULL;
     list->tail = curr;
@@ -71,16 +80,17 @@ void list_append(List *list, void * val){
     ++(list->size);
 }
 
-void list_prepend(List *list, void * val){
+/* The usual prepend function, place the input data at the start of the list. */
+void list_prepend(List *list, void * data){
     List_element *curr, *next;
 
-    if (list == NULL || val == NULL) {
+    if (list == NULL) {
         return;
     }
 
     next = list->head;
     curr = malloc(sizeof(List_element));
-    curr->data = val;
+    curr->data = data;
 
     list->head = curr;
     curr->prev = NULL;
@@ -93,7 +103,9 @@ void list_prepend(List *list, void * val){
     ++(list->size);
 }
 
-void list_print(List *list, char * (*tostr)(const void *, char *), int strsz){
+/* The print function use the tostr() method supplies by the user to fill a character buffer with the stringfied
+information of a data and print these information for each data point in the list.  */
+void list_print(List *list){
     List_element *el;
     char * res;
 
@@ -106,10 +118,10 @@ void list_print(List *list, char * (*tostr)(const void *, char *), int strsz){
         return;
     }
 
-    res = (char *) malloc(strsz);
+    res = (char *) malloc(list->strsz);
     printf("[");
     for (el = list->head; el != NULL; el = el->next) {
-        res = tostr(el->data, res);
+        res = list->tostr(el->data, res);
         if (res == NULL){
             printf("Error when stringfying data value");
         } else {
@@ -120,18 +132,19 @@ void list_print(List *list, char * (*tostr)(const void *, char *), int strsz){
     free(res);
 }
 
-
-void list_insert(List  *list, int index, void * val){
+/* The insert function put the input data in the specified index position in the list, if index goes pass
+the end of list, append to the end of the list. */
+void list_insert(List  *list, int index, void * data){
     List_element *el, *next, *new;
     int count;
 
-    if (list == NULL || val == NULL) {
+    if (list == NULL) {
         return;
     }
 
     if (list->size < index + 1){
         printf("Index value %d past end of list: appending\n", index);
-        list_append(list,val);
+        list_append(list,data);
         return;
     }
 
@@ -143,7 +156,7 @@ void list_insert(List  *list, int index, void * val){
     }
 
     new = malloc(sizeof(List_element));
-    new->data = val;
+    new->data = data;
     new->next = next;
     new->prev = next->prev;
     new->prev->next = new;
@@ -151,6 +164,7 @@ void list_insert(List  *list, int index, void * val){
     ++(list->size);
 }
 
+/* Remove the data at the index location of the list and return the removed data. */
 void * list_remove(List  *list, int index){
     List_element *el;
     void *re;
@@ -159,12 +173,10 @@ void * list_remove(List  *list, int index){
     if (list == NULL) {
         return NULL;
     }
-
     if (list->size == 0) {
         printf("Error: list is empty.\n");
         return NULL;
     }
-
     if (index > list->size -1 || index < 0){
         printf("Error: index out of bound.\n");
         return NULL;
@@ -192,6 +204,7 @@ void * list_remove(List  *list, int index){
     return re;
 }
 
+/* Return the data at the index location of the list without removing it. */
 void * list_val_at(List *list, int index){
     List_element *el;
     int count;
@@ -201,7 +214,6 @@ void * list_val_at(List *list, int index){
     if (list == NULL) {
         return NULL;
     }
-
     if (index > list->size -1 || index < 0) {
         printf("Error: Index out of bound\n");
         return NULL;
@@ -215,7 +227,26 @@ void * list_val_at(List *list, int index){
     return ret;
 }
 
-int list_clear(List *list, int (*destroy) (void *)){
+/* Find the first index position in the list that stores the same data as the input data. How to compare them is
+determined by the comparator function that the list stores when constructed. */
+int list_find_first(List *list, const void * data){
+    int index;
+    List_element *el;
+
+    if (list == NULL) {
+        return -1;
+    }
+
+    for (index=0, el = list->head; el != NULL; el = el->next, ++index) {
+        if (list->compar(el->data, data) == 0) {
+            return index;
+        }
+    }
+    return -1;
+}
+
+/* Empty up all the data stored in a list, return the list to the state when it was just created. */
+int list_clear(List *list){
     List_element *el, *curr;
 
     if (list == NULL) {
@@ -226,7 +257,7 @@ int list_clear(List *list, int (*destroy) (void *)){
     while(el != NULL){
         curr = el;
         el = el->next;
-        if (destroy(curr->data) < 0) {
+        if (list->destroy(curr->data) < 0) {
             return -1;
         } else {
             free(curr);
@@ -235,6 +266,7 @@ int list_clear(List *list, int (*destroy) (void *)){
 
     if (list->iter != NULL) {
         free(list->iter);
+        list->iter = NULL;
     }
 
     list->head = NULL;
@@ -243,22 +275,8 @@ int list_clear(List *list, int (*destroy) (void *)){
     return 0;
 }
 
-int list_find_first(List *list, const void * val, int (*compar)(const void *, const void *)){
-    int index;
-    List_element *el;
-
-    if (list == NULL || val == NULL || compar == NULL) {
-        return -1;
-    }
-
-    for (index=0, el = list->head; el != NULL; el = el->next, ++index) {
-        if (compar(el->data, val) == 0) {
-            return index;
-        }
-    }
-    return -1;
-}
-
+/* Destruct a list instance. This function requires user to pass in a double pointer to a list in order
+to modify the list instance itself. Upon success, the pointer to the list will be set to NULL for safeguarding. */
 int list_destroy(List **list) {
     List * l; 
     if (list == NULL || *list == NULL) {

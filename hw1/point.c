@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <assert.h>
 #include "list.h"
 
 const int STRLENG = 18;
@@ -80,23 +81,24 @@ int destroy(void * a) {
 }
 
 int main(int argc, char **argv){
-  int i,n;
+  int i,j,n, ntrial;
   List * ptlist;
   Point ** ptarr;
   Point * rm, *comparing, *comparee, *p, *ap, *prep;
   char* res;
   clock_t t;
-  double processor_t;
+  double *processor_t, ave_t;
   Iterator * iter;
   float ssDis, sumDis, sd, num;
 
   n = atoi(argv[1]);
+  assert(n>0); /* check for valid input */
 
-  ptlist = list_create();
-  ptarr = (Point**) malloc(n*sizeof(Point*));
-  
+  /* randomly create TESTN of point and append to the List for the unit test. */
   srand(time(NULL));
-  
+
+  ptlist = list_create(tostr, destroy, Point_comparer, STRSZ);
+  ptarr = (Point**) malloc(n*sizeof(Point*));
   for (i=0;i<TESTN;++i){
     Point * p;
     p = create_ran_point();
@@ -112,10 +114,10 @@ int main(int argc, char **argv){
   p->x = 1.0; p->y = 1.0; p->z = 1.0;
   i=4;
   printf("Before insertion: \n");
-  list_print(ptlist, tostr, STRSZ);
+  list_print(ptlist);
   printf("After insert p = (1.0,1.0,1.0) to index %d: \n", i);
   list_insert(ptlist, i, p);
-  list_print(ptlist, tostr, STRSZ);
+  list_print(ptlist);
 
   printf("\nChecking list_append and list_prepend function...\n");
   ap = (Point *) malloc(sizeof(Point));
@@ -125,13 +127,13 @@ int main(int argc, char **argv){
   printf("After prepend p = (2.0,2.0,2.0) and append p = (-2.0,-2.0,-2.0) to the list: \n");
   list_append(ptlist, ap);
   list_prepend(ptlist, prep);
-  list_print(ptlist, tostr, STRSZ);
+  list_print(ptlist);
 
   printf("\nChecking list_remove function...\n");
   printf("After removed the first element: \n");
   rm = (Point *) list_remove(ptlist, 0);
   destroy(rm);
-  list_print(ptlist, tostr, STRSZ);
+  list_print(ptlist);
   printf("Try remove element at an out of bound index (expected: index out of bound): \n");
   rm = (Point *) list_remove(ptlist, 20);
   destroy(rm);
@@ -152,16 +154,16 @@ int main(int argc, char **argv){
     comparing->y = comparee->y;
     comparing->z = comparee->z;
   }
-  printf("Returned index of the element similar to a newly created element which is similar to the element at index %d: %d (expected: %d)\n\n", i, list_find_first(ptlist, comparing, Point_comparer),i);
+  assert(list_find_first(ptlist, comparing) == i);
   free(comparing);
 
   printf("\nChecking list_destroy on non-empty list...\n");
-  printf("exit status: %d, expected: -1\n\n", list_destroy(&ptlist));
+  assert(list_destroy(&ptlist) == -1);
 
   printf("\nChecking list_clear on the list...\n");
-  list_clear(ptlist, destroy);
+  list_clear(ptlist);
   printf("\nChecking list_clear on the cleared list...\n");
-  list_clear(ptlist, destroy);
+  list_clear(ptlist);
 
   printf("\n---------End of Test------------\n\n\n");
 
@@ -170,45 +172,61 @@ int main(int argc, char **argv){
 
   printf("\n\n---------Start of Performance Comparison------------\n\n\n");
 
-  /* allocates memory and assigns a valid pointer value to each
-     of the first n values of the pointer array p */
-  ssDis = sumDis = 0;
-  for (i=0;i<n;++i){
+
+  /* randomly create n point and store them in the List and the Array for the performance comparison. */
+  for (i=0;i<n;++i) {
     Point * p;
     p = create_ran_point();
     list_append(ptlist, p);
     ptarr[i] = p; 
   }
-
-  t = clock();
-  for (i=0;i<n;++i) {
-    num = dist(ptarr[i]);
-    sumDis += num;
-    ssDis += num*num;
+  ntrial = 20;
+  ave_t = 0;
+  processor_t = malloc(ntrial*sizeof(double));
+  for (j=0;j<ntrial;++j) {
+    ssDis = sumDis = 0;
+    t = clock();
+    for (i=0;i<n;++i) {
+      num = dist(ptarr[i]);
+      sumDis += num;
+      ssDis += num*num;
+    }
+    t = clock() - t;
+    processor_t[j] = ((double) t)/CLOCKS_PER_SEC;
   }
-  t = clock() - t;
-  processor_t = ((double) t)/CLOCKS_PER_SEC;
-  sd = sqrt((ssDis/n) - (sumDis/n)*(sumDis/n));
-  printf("SD = %f. Array took about %f seconds to calculate the standard deviation of %d data. \n", sd, processor_t, n);
-
-  ssDis = sumDis = 0;
-  t = clock();
-  iter = list_getIterator(ptlist);
-  while (hasNext(iter)) {
-    Point *p;
-    p = (Point *)next(iter);
-    num = dist(p);
-    sumDis += num;
-    ssDis += num*num;
+  for (i=0;i<ntrial;++i) {
+    ave_t += processor_t[i];
   }
-  t = clock() - t;
-  processor_t = ((double) t)/CLOCKS_PER_SEC;
+  ave_t = ave_t/ntrial;
   sd = sqrt((ssDis/n) - (sumDis/n)*(sumDis/n));
-  printf("SD = %f. List took about %f seconds to calculate the standard deviation of %d data. \n", sd, processor_t, n);
+  printf("SD = %f. On average of %d trials, Array took about %f seconds to calculate the standard deviation of %d data. \n", sd, ntrial, ave_t, n);
 
-  list_clear(ptlist, destroy);
+  ave_t = 0;
+  t = clock();
+  for (i=0;i<ntrial;++i) {
+    iter = list_getIterator(ptlist);
+    ssDis = sumDis = 0;
+    while (hasNext(iter)) {
+      Point *p;
+      p = (Point *)next(iter);
+      num = dist(p);
+      sumDis += num;
+      ssDis += num*num;
+    }
+    t = clock() - t;
+    processor_t[i] = ((double) t)/CLOCKS_PER_SEC;
+  }
+  for (i=0;i<ntrial;++i) {
+    ave_t += processor_t[i];
+  }
+  ave_t = ave_t/ntrial;
+  sd = sqrt((ssDis/n) - (sumDis/n)*(sumDis/n));
+  printf("SD = %f. On average of %d trials, List took about %f seconds to calculate the standard deviation of %d data. \n", sd, ntrial, ave_t, n);
+
+  list_clear(ptlist);
   list_destroy(&ptlist);
   free(ptarr);
+  free(processor_t);
 
   printf("\n---------End of Performance Comparison------------\n\n\n");
 

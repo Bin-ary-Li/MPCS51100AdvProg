@@ -15,27 +15,31 @@ typedef struct List{
     List_element *head;
     List_element *tail;
     Iterator * iter;
+    char * (*tostr)(const void *, char *);
+    int (*destroy) (void *);
+    int (*compar)(const void *, const void *);
+    int strsz;
     int size;
 } List;
 
 
-List * list_create();
+List * list_create(char * (*tostr)(const void *, char *), int (*destroy) (void *),int (*compar)(const void *, const void *), int strsz);
 
-void list_append(List *list, void * val);
+void list_append(List *list, void * data);
 
-void list_prepend(List *list, void * val);
+void list_prepend(List *list, void * data);
 
-void list_print(List *list, char * (*tostr)(const void *, char *), int strsz);
+void list_print(List *list);
 
-void list_insert(List *list, int index, void * val);
+void list_insert(List *list, int index, void * data);
 
 void * list_remove(List *list, int index);
 
 void * list_val_at(List *list, int index);
 
-int list_clear(List *list, int (*destory) (void *));
+int list_clear(List *list);
 
-int list_find_first(List *list, const void * val, int (*compar)(const void *, const void *));
+int list_find_first(List *list, const void * data);
 
 int list_destroy(List **list);
 
