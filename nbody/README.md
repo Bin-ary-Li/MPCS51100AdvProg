@@ -1,4 +1,4 @@
-# Homework 3: N-body Simulation
+# N-body Simulation
 
 ![n-body simulation](/nbody/images/cover.png)
 
